@@ -8,26 +8,34 @@ import stat
 from pathlib import Path
 from pyunpack import Archive
 from easyprocess import EasyProcess
+import subprocess
 
 def setup_unrar():
     """設置 UnRAR 工具"""
     if getattr(sys, 'frozen', False):
         # 如果是打包後的應用程序
         base_path = Path(sys._MEIPASS)
+        unrar_path = base_path / 'unrar'
+        if unrar_path.exists():
+            # 確保有執行權限
+            unrar_path.chmod(0o755)
+            os.environ['PATH'] = f"{base_path}:{os.environ.get('PATH', '')}"
     else:
-        # 如果是開發環境
-        base_path = Path(__file__).parent
-    
-    unrar_path = base_path / 'unrar'
-    if not unrar_path.exists():
-        bundled_unrar = base_path / 'tools' / 'unrar'
-        if bundled_unrar.exists():
-            shutil.copy2(bundled_unrar, unrar_path)
-            # 設置執行權限
-            unrar_path.chmod(unrar_path.stat().st_mode | stat.S_IEXEC)
-    
-    os.environ['PATH'] = f"{base_path}:{os.environ.get('PATH', '')}"
-    return unrar_path
+        # 開發環境使用系統的 unrar
+        pass
+
+    # 驗證 unrar 是否可用
+    try:
+        result = subprocess.run(['unrar', '-v'], 
+                              capture_output=True, 
+                              text=True, 
+                              check=False)
+        if result.returncode != 0:
+            messagebox.showerror("錯誤", "UnRAR 工具初始化失敗")
+            sys.exit(1)
+    except Exception as e:
+        messagebox.showerror("錯誤", f"UnRAR 工具檢查失敗: {str(e)}")
+        sys.exit(1)
 
 def extract_archive(archive_path, extract_path, password=None):
     """處理不同格式的壓縮文件"""
