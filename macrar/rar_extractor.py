@@ -71,20 +71,30 @@ def main():
             filetypes=[("壓縮文件", "*.rar *.7z")],
             title="選擇壓縮文件"
         )
-        archive_file_path.set(filepath)
+        if filepath:
+            archive_file_path.set(filepath)
+            # 設置預設解壓目錄為壓縮文件所在目錄
+            default_extract_path = os.path.dirname(filepath)
+            extract_dir_path.set(default_extract_path)
 
     def select_extract_dir():
         dirpath = filedialog.askdirectory(title="選擇解壓目標文件夾")
-        extract_dir_path.set(dirpath)
+        if dirpath:
+            extract_dir_path.set(dirpath)
 
     def extract_file():
         archive_path = archive_file_path.get()
         extract_path = extract_dir_path.get()
         password = password_entry.get() or None
 
-        if not archive_path or not extract_path:
-            messagebox.showwarning("提示", "請選擇壓縮文件和目標文件夾")
+        if not archive_path:
+            messagebox.showwarning("提示", "請選擇壓縮文件")
             return
+
+        # 如果沒有指定解壓目錄，使用壓縮文件所在目錄
+        if not extract_path:
+            extract_path = os.path.dirname(archive_path)
+            extract_dir_path.set(extract_path)
 
         try:
             # 創建進度條
