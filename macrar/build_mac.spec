@@ -1,4 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
+import stat
 
 block_cipher = None
 
@@ -12,7 +14,8 @@ a = Analysis(
         'pyunpack',
         'patool',
         'py7zr',
-        'easyprocess'
+        'easyprocess',
+        'tqdm'
     ],
     hookspath=[],
     hooksconfig={},
@@ -65,22 +68,35 @@ app = BUNDLE(
         'CFBundleVersion': '1.0.0',
         'NSHighResolutionCapable': 'True',
         'LSEnvironment': {
-            'PATH': '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin'
+            'PATH': '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin',
+            'DYLD_LIBRARY_PATH': '@executable_path/../Resources'
         }
     },
 )
 
 # 設置權限
-import os
-import stat
 def make_executable(path):
     mode = os.stat(path).st_mode
     mode |= (mode & 0o444) >> 2    # copy R bits to X
     os.chmod(path, mode)
 
-if os.path.exists('dist'):
-    for root, dirs, files in os.walk('dist'):
+# 等待 app bundle 創建完成後再設置權限
+app_path = os.path.join('dist', '解壓工具.app')
+if os.path.exists(app_path):
+    # 設置整個 .app 目錄的權限
+    for root, dirs, files in os.walk(app_path):
         for dir in dirs:
-            os.chmod(os.path.join(root, dir), 0o755)
+            dir_path = os.path.join(root, dir)
+            os.chmod(dir_path, 0o755)
         for file in files:
-            make_executable(os.path.join(root, file)) 
+            file_path = os.path.join(root, file)
+            make_executable(file_path)
+    
+    # 特別設置 MacOS 目錄的權限
+    macos_path = os.path.join(app_path, 'Contents', 'MacOS')
+    if os.path.exists(macos_path):
+        os.chmod(macos_path, 0o755)
+        for file in os.listdir(macos_path):
+            file_path = os.path.join(macos_path, file)
+            if os.path.isfile(file_path):
+                os.chmod(file_path, 0o755) 

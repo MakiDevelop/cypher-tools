@@ -16,12 +16,19 @@ def setup_unrar():
     """設置 UnRAR 工具"""
     if getattr(sys, 'frozen', False):
         # 如果是打包後的應用程序
-        base_path = Path(sys._MEIPASS)
+        if sys._MEIPASS:
+            base_path = Path(sys._MEIPASS)
+        else:
+            # 如果是從應用程式資料夾運行
+            base_path = Path(sys.executable).parent.parent / 'Resources'
+        
         unrar_path = base_path / 'unrar'
         if unrar_path.exists():
             # 確保有執行權限
             unrar_path.chmod(0o755)
             os.environ['PATH'] = f"{base_path}:{os.environ.get('PATH', '')}"
+            # 設置 DYLD_LIBRARY_PATH
+            os.environ['DYLD_LIBRARY_PATH'] = f"{base_path}:{os.environ.get('DYLD_LIBRARY_PATH', '')}"
     else:
         # 開發環境使用系統的 unrar
         pass
@@ -31,7 +38,8 @@ def setup_unrar():
         result = subprocess.run(['unrar', '-v'], 
                               capture_output=True, 
                               text=True, 
-                              check=False)
+                              check=False,
+                              env=os.environ)  # 使用更新後的環境變量
         if result.returncode != 0:
             messagebox.showerror("錯誤", "UnRAR 工具初始化失敗")
             sys.exit(1)
