@@ -1,0 +1,5 @@
+py7zr>=0.20.5
+pyunpack>=0.3
+patool>=1.12
+easyprocess>=1.1
+pyinstaller==6.11.1
